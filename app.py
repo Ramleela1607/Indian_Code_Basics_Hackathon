@@ -430,42 +430,24 @@ with col4:
 
 st.divider()
 
-def get_localized_vector_description(best_row: dict, lang_code: str):
-    query_text = " | ".join([
-        f"country:{best_row.get('soil_country','')}",
-        f"state:{best_row.get('soil_stateOrRegion','')}",
-        f"city:{best_row.get('city','')}",
-        f"crop:{best_row.get('crop_cropName','')}",
-        f"soil:{best_row.get('soilMoistureCategory','')}",
-        f"pest:{best_row.get('pestRiskCategory','')}",
-        f"rain:{best_row.get('rainfall_rainfallType','')}",
-    ]).strip()
+def get_localized_description_from_row(best_row: dict, lang_code: str):
+    desc = best_row.get("description")
+    if not desc:
+        return None, "No description in row."
 
-    q = esc(query_text)
+    q_desc = esc(desc)
     lang = esc(lang_code)
 
     sql = f"""
-    WITH hits AS (
-      SELECT *
-      FROM vector_search(
-        index => 'databricks_free_edition.databricks_gold.farm_vector_index',
-        query_text => '{q}',
-        query_type => 'HYBRID',
-        num_results => 1
-      )
-    )
-    SELECT
-      ai_translate(description, '{lang}') AS localized_description
-    FROM hits
+    SELECT ai_translate('{q_desc}', '{lang}') AS localized_description
     """
-
-    resp, err = run_databricks_sql(sql, max_wait_s=40)
+    resp, err = run_databricks_sql(sql, max_wait_s=30)
     if err:
         return None, err
 
     df_desc = response_to_df(resp)
-    if df_desc.empty or "localized_description" not in df_desc.columns:
-        return None, "No description returned from vector search."
+    if df_desc.empty:
+        return None, "Translation returned empty."
 
     return str(df_desc.iloc[0]["localized_description"]), None
 
@@ -536,7 +518,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
         best = df.iloc[0].to_dict()
         st.markdown(generate_farm_advisory(best))
     
-        localized_desc, desc_err = get_localized_vector_description(best, lang_code)
+        localized_desc, desc_err = get_localized_description_from_row(best, lang_code)
         if desc_err:
             st.warning(f"AI description not available: {desc_err}")
             df["ai_description"] = ""
@@ -547,6 +529,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
     
         with st.expander("📊 View Raw Data (Top 5)"):
             st.dataframe(df, use_container_width=True)
+
 
 
 
