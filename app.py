@@ -493,9 +493,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
         st.warning("Please enter: " + ", ".join(missing))
         st.stop()
 
-    st.toast(
-        "🙏 Thank you, farmers, for turning soil into sustenance and effort into hope.",
-        icon="🌾")
+    st.success("🌾🙏 Thank you, farmers, for turning soil into sustenance and effort into hope.")
     q_country = esc(country)
     q_state = esc(state)
     q_city = esc(city)
@@ -559,6 +557,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
             st.markdown("### 🤖 AI Description (Translated)")
             st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
             df["ai_description"] = localized_desc
+
 
 
 
