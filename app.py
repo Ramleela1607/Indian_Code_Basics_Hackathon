@@ -97,7 +97,7 @@ st.markdown(
     """
 <div class="glass">
 <b>How it works:</b><br>
-Type Country, State/Region and City/District — you will get AI-suggestions.Thank you, farmers, for turning soil into sustenance and effort into hope.<br>
+Type Country, State/Region and City/District — you will get AI-suggestions.<br>
 Click the button to get farmer-friendly AI wording + raw data.
 </div>
 """,
@@ -560,6 +560,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
             st.markdown("### 🤖 AI Description (Translated)")
             st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
             df["ai_description"] = localized_desc
+
 
 
 
