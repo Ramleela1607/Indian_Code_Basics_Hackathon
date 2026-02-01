@@ -484,6 +484,10 @@ def get_localized_description_from_row(best_row: dict, lang_code: str):
 # ACTION BUTTON
 # =========================
 if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="get_reco_btn"):
+    st.toast(
+        "🙏 Thank you, farmers, for turning soil into sustenance and effort into hope.",
+        icon="🌾"
+    )
     missing = []
     if not country: missing.append("Country")
     if not state: missing.append("State/Region")
@@ -556,6 +560,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
             st.markdown("### 🤖 AI Description (Translated)")
             st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
             df["ai_description"] = localized_desc
+
 
 
 
