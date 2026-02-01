@@ -374,8 +374,6 @@ def auto_pick_first_match(label: str, column: str, key_prefix: str, extra_where:
 # INPUT UI (AUTO-SUGGEST)
 # =========================
 st.markdown("### 🌍 Enter Location & Soil Details")
-st.markdown('<div class="glass">', unsafe_allow_html=True)
-
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -492,5 +490,6 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
         if best.get("description"):
             st.markdown("### 🧠 OTHER SUGGESTIONS")
             st.markdown(f"<div class='glass'>{best.get('description')}</div>", unsafe_allow_html=True)
+
 
 
