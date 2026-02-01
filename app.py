@@ -123,12 +123,6 @@ LANG_MAP = {
     "Italian": "it",
     "Portuguese": "pt",
     "Thai": "th",
-
-    # Not supported by ai_translate in many Databricks setups
-    "Tamil (needs model endpoint)": None,
-    "Telugu (needs model endpoint)": None,
-    "Kannada (needs model endpoint)": None,
-    "Urdu (needs model endpoint)": None,
 }
 
 lang_label = st.selectbox("🌐 Output Language", list(LANG_MAP.keys()), index=0, key="lang_pick")
@@ -562,6 +556,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
             st.markdown("### 🤖 AI Description (Translated)")
             st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
             df["ai_description"] = localized_desc
+
 
 
 
