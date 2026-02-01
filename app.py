@@ -13,6 +13,20 @@ import base64
 # =========================
 st.set_page_config(page_title="Intelligent Farm AI", page_icon="🌾", layout="wide")
 
+LANG_MAP = {
+    "English": "en",
+    "Hindi": "hi",
+    "Spanish": "es",
+    "French": "fr",
+    "German": "de",
+    "Italian": "it",
+    "Portuguese": "pt",
+    "Thai": "th",
+}
+
+lang_label = st.selectbox("🌐 Output Language", list(LANG_MAP.keys()), index=0)
+lang_code = LANG_MAP[lang_label]
+
 
 # =========================
 # BACKGROUND IMAGE (BASE64) + THEME
@@ -414,9 +428,46 @@ with col4:
         key="soil_type"
     )
 
-st.markdown("</div>", unsafe_allow_html=True)
 st.divider()
 
+def get_localized_vector_description(best_row: dict, lang_code: str):
+    query_text = " | ".join([
+        f"country:{best_row.get('soil_country','')}",
+        f"state:{best_row.get('soil_stateOrRegion','')}",
+        f"city:{best_row.get('city','')}",
+        f"crop:{best_row.get('crop_cropName','')}",
+        f"soil:{best_row.get('soilMoistureCategory','')}",
+        f"pest:{best_row.get('pestRiskCategory','')}",
+        f"rain:{best_row.get('rainfall_rainfallType','')}",
+    ]).strip()
+
+    q = esc(query_text)
+    lang = esc(lang_code)
+
+    sql = f"""
+    WITH hits AS (
+      SELECT *
+      FROM vector_search(
+        index => 'databricks_free_edition.databricks_gold.farm_vector_index',
+        query_text => '{q}',
+        query_type => 'HYBRID',
+        num_results => 1
+      )
+    )
+    SELECT
+      ai_translate(description, '{lang}') AS localized_description
+    FROM hits
+    """
+
+    resp, err = run_databricks_sql(sql, max_wait_s=40)
+    if err:
+        return None, err
+
+    df_desc = response_to_df(resp)
+    if df_desc.empty or "localized_description" not in df_desc.columns:
+        return None, "No description returned from vector search."
+
+    return str(df_desc.iloc[0]["localized_description"]), None
 
 # =========================
 # ACTION BUTTON
@@ -480,16 +531,26 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
         st.info("No data found OR results were not returned inline.")
         with st.expander("🔎 Debug Response"):
             st.json(resp)
+    
     else:
         best = df.iloc[0].to_dict()
         st.markdown(generate_farm_advisory(best))
-
+    
+        localized_desc, desc_err = get_localized_vector_description(best, lang_code)
+        if desc_err:
+            st.warning(f"AI description not available: {desc_err}")
+            df["ai_description"] = ""
+        else:
+            st.markdown("### 🤖 AI Description (from Vector Index)")
+            st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
+            df["ai_description"] = localized_desc
+    
         with st.expander("📊 View Raw Data (Top 5)"):
             st.dataframe(df, use_container_width=True)
 
-        if best.get("description"):
-            st.markdown("### 🧠 OTHER SUGGESTIONS")
-            st.markdown(f"<div class='glass'>{best.get('description')}</div>", unsafe_allow_html=True)
+
+
+
 
 
 
