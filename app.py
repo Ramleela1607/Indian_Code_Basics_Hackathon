@@ -13,21 +13,6 @@ import base64
 # =========================
 st.set_page_config(page_title="Intelligent Farm AI", page_icon="🌾", layout="wide")
 
-LANG_MAP = {
-    "English": "en",
-    "Hindi": "hi",
-    "Spanish": "es",
-    "French": "fr",
-    "German": "de",
-    "Italian": "it",
-    "Portuguese": "pt",
-    "Thai": "th",
-}
-
-lang_label = st.selectbox("🌐 Output Language", list(LANG_MAP.keys()), index=0)
-lang_code = LANG_MAP[lang_label]
-
-
 # =========================
 # BACKGROUND IMAGE (BASE64) + THEME
 # =========================
@@ -128,6 +113,45 @@ st.divider()
 DATABRICKS_TOKEN = "dapi2d2657b6fd12953643f6a799ab069394"
 DATABRICKS_SQL_ENDPOINT = "https://dbc-ecdd486b-6f8d.cloud.databricks.com/api/2.0/sql/statements"
 WAREHOUSE_ID = "b4504872c07b5058"
+
+LANG_MAP = {
+    "English": "English",
+    "Hindi": "Hindi",
+    "Tamil": "Tamil",
+    "Telugu": "Telugu",
+    "Kannada": "Kannada",
+    "Urdu": "Urdu",
+    "Spanish": "Spanish",
+    "French": "French",
+}
+lang_label = st.selectbox("🌐 Output Language", list(LANG_MAP.keys()), index=0, key="lang_pick")
+target_lang = LANG_MAP[lang_label]
+
+
+def translate_any_language(text: str, target_language: str):
+    text = text or ""
+    if not text.strip():
+        return "", None
+
+    q_text = esc(text)
+    q_lang = esc(target_language)
+
+    # NOTE: this uses a Databricks Foundation Model endpoint behind the scenes
+    sql = f"""
+    SELECT ai_query(
+      "Translate the following text into {q_lang}. Keep it farmer-friendly and concise. Text: {q_text}"
+    ) AS translated
+    """
+
+    resp, err = run_databricks_sql(sql, max_wait_s=60)
+    if err:
+        return None, err
+
+    df_t = response_to_df(resp)
+    if df_t.empty or "translated" not in df_t.columns:
+        return None, "No translation returned."
+    return str(df_t.iloc[0]["translated"]), None
+
 
 TABLE = "databricks_free_edition.databricks_gold.gold_farm_advisor"
 
@@ -518,7 +542,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
         best = df.iloc[0].to_dict()
         st.markdown(generate_farm_advisory(best))
     
-        localized_desc, desc_err = get_localized_description_from_row(best, lang_code)
+        localized_desc, desc_err = translate_any_language(best.get("description", ""), target_lang)
         if desc_err:
             st.warning(f"AI description not available: {desc_err}")
             df["ai_description"] = ""
@@ -529,6 +553,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
     
         with st.expander("📊 View Raw Data (Top 5)"):
             st.dataframe(df, use_container_width=True)
+
 
 
 
