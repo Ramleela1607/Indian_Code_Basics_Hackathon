@@ -124,22 +124,27 @@ LANG_MAP = {
     "Spanish": "Spanish",
     "French": "French",
 }
+
 lang_label = st.selectbox("🌐 Output Language", list(LANG_MAP.keys()), index=0, key="lang_pick")
 target_lang = LANG_MAP[lang_label]
 
 
 def translate_any_language(text: str, target_language: str):
-    text = text or ""
-    if not text.strip():
+    """
+    Uses Databricks AI function ai_query(request => ...) to translate text
+    into ANY language (Tamil/Telugu/Kannada/Urdu, etc.)
+    Returns (translated_text, error_or_None)
+    """
+    text = (text or "").strip()
+    if not text:
         return "", None
 
     q_text = esc(text)
     q_lang = esc(target_language)
 
-    # NOTE: this uses a Databricks Foundation Model endpoint behind the scenes
     sql = f"""
     SELECT ai_query(
-      "Translate the following text into {q_lang}. Keep it farmer-friendly and concise. Text: {q_text}"
+      request => "Translate the following text into {q_lang}. Keep it farmer-friendly, clear, and concise. Text: {q_text}"
     ) AS translated
     """
 
@@ -150,6 +155,7 @@ def translate_any_language(text: str, target_language: str):
     df_t = response_to_df(resp)
     if df_t.empty or "translated" not in df_t.columns:
         return None, "No translation returned."
+
     return str(df_t.iloc[0]["translated"]), None
 
 
@@ -553,6 +559,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
     
         with st.expander("📊 View Raw Data (Top 5)"):
             st.dataframe(df, use_container_width=True)
+
 
 
 
