@@ -115,47 +115,52 @@ DATABRICKS_SQL_ENDPOINT = "https://dbc-ecdd486b-6f8d.cloud.databricks.com/api/2.
 WAREHOUSE_ID = "b4504872c07b5058"
 
 LANG_MAP = {
-    "English": "English",
-    "Hindi": "Hindi",
-    "Tamil": "Tamil",
-    "Telugu": "Telugu",
-    "Kannada": "Kannada",
-    "Urdu": "Urdu",
-    "Spanish": "Spanish",
-    "French": "French",
+    "English": "en",
+    "Hindi": "hi",
+    "Spanish": "es",
+    "French": "fr",
+    "German": "de",
+    "Italian": "it",
+    "Portuguese": "pt",
+    "Thai": "th",
+
+    # Not supported by ai_translate in many Databricks setups
+    "Tamil (needs model endpoint)": None,
+    "Telugu (needs model endpoint)": None,
+    "Kannada (needs model endpoint)": None,
+    "Urdu (needs model endpoint)": None,
 }
 
 lang_label = st.selectbox("🌐 Output Language", list(LANG_MAP.keys()), index=0, key="lang_pick")
-target_lang = LANG_MAP[lang_label]
+lang_code = LANG_MAP[lang_label]
 
 
-def translate_any_language(text: str, target_language: str):
+
+def translate_supported(text: str, lang_code: str):
     """
-    Uses Databricks AI function ai_query(request => ...) to translate text
-    into ANY language (Tamil/Telugu/Kannada/Urdu, etc.)
-    Returns (translated_text, error_or_None)
+    Uses ai_translate() only (no endpoint).
+    If lang_code is None, returns (None, error message).
     """
     text = (text or "").strip()
     if not text:
         return "", None
 
+    if lang_code is None:
+        return None, "This language requires a Databricks Model Serving endpoint (not available in Free Edition)."
+
     q_text = esc(text)
-    q_lang = esc(target_language)
+    q_lang = esc(lang_code)
 
     sql = f"""
-    SELECT ai_query(
-      request => "Translate the following text into {q_lang}. Keep it farmer-friendly, clear, and concise. Text: {q_text}"
-    ) AS translated
+    SELECT ai_translate('{q_text}', '{q_lang}') AS translated
     """
-
-    resp, err = run_databricks_sql(sql, max_wait_s=60)
+    resp, err = run_databricks_sql(sql, max_wait_s=40)
     if err:
         return None, err
 
     df_t = response_to_df(resp)
-    if df_t.empty or "translated" not in df_t.columns:
-        return None, "No translation returned."
-
+    if df_t.empty:
+        return None, "ai_translate returned empty result"
     return str(df_t.iloc[0]["translated"]), None
 
 
@@ -548,21 +553,15 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
         best = df.iloc[0].to_dict()
         st.markdown(generate_farm_advisory(best))
     
-        localized_desc, desc_err = translate_any_language(best.get("description", ""), target_lang)
+        localized_desc, desc_err = translate_supported(best.get("description", ""), lang_code)
+        
         if desc_err:
             st.warning(f"AI description not available: {desc_err}")
             df["ai_description"] = ""
         else:
-            st.markdown("### 🤖 AI Description (from Vector Index)")
+            st.markdown("### 🤖 AI Description (Translated)")
             st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
             df["ai_description"] = localized_desc
-    
-        with st.expander("📊 View Raw Data (Top 5)"):
-            st.dataframe(df, use_container_width=True)
-
-
-
-
 
 
 
