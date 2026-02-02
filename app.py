@@ -110,9 +110,9 @@ st.divider()
 # DATABRICKS CONFIG
 # =========================
 # ✅ Replace with your NEW token (recommended: use st.secrets later)
-DATABRICKS_TOKEN = "dapi2d2657b6fd12953643f6a799ab069394"
+DATABRICKS_TOKEN = ""
 DATABRICKS_SQL_ENDPOINT = "https://dbc-ecdd486b-6f8d.cloud.databricks.com/api/2.0/sql/statements"
-WAREHOUSE_ID = "b4504872c07b5058"
+WAREHOUSE_ID = ""
 
 LANG_MAP = {
     "English": "en",
@@ -557,6 +557,7 @@ if st.button("🌾 Get Farming Recommendation", use_container_width=True, key="g
             st.markdown("### 🤖 AI Description (Translated)")
             st.markdown(f"<div class='glass'>{localized_desc}</div>", unsafe_allow_html=True)
             df["ai_description"] = localized_desc
+
 
 
 
